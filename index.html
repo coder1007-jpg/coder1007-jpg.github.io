@@ -1,117 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shared Links</title>
+    <meta charset="utf-8">
+    <title>Shaka ClearKey Demo</title>
 
-<style>
-:root{
-    --primary:#2563eb;
-    --primary-hover:#1d4ed8;
-    --bg:#f5f7fb;
-    --card:#ffffff;
-    --text:#1f2937;
-}
+    <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.js"></script>
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Segoe UI,Arial,sans-serif;
-}
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: black;
+        }
 
-body{
-    background:var(--bg);
-    color:var(--text);
-    padding:25px;
-}
-
-.container{
-    max-width:700px;
-    margin:auto;
-}
-
-h1{
-    text-align:center;
-    margin-bottom:25px;
-}
-
-.card{
-    background:var(--card);
-    border-radius:12px;
-    padding:20px;
-    margin-bottom:20px;
-    box-shadow:0 5px 15px rgba(0,0,0,.08);
-}
-
-.card h2{
-    margin-bottom:15px;
-    color:var(--primary);
-}
-
-.link{
-    display:block;
-    text-decoration:none;
-    background:var(--primary);
-    color:#fff;
-    padding:12px 15px;
-    margin:10px 0;
-    border-radius:8px;
-    transition:.2s;
-    word-break:break-word;
-}
-
-.link:hover{
-    background:var(--primary-hover);
-    transform:translateY(-2px);
-}
-</style>
+        video {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="container">
+<video id="video" controls autoplay></video>
 
-<h1>Shared Links</h1>
+<script>
+async function init() {
 
-<div class="card">
-<h2>Main</h2>
+    shaka.polyfill.installAll();
 
-<a class="link"
-target="_blank"
-href="https://nhjjhhjhjjhfjj.pages.dev/1782536866/ec9b545109b84bc99cc7de24b940e255/jTp1PEveafXD0zkbdfc_fBTeJmPW5kHAPi2oYDSTxq4/fox-sports-1.m3u8">
-Main Stream
-</a>
+    if (!shaka.Player.isBrowserSupported()) {
+        alert("Browser not supported");
+        return;
+    }
 
-</div>
+    const video = document.getElementById("video");
+    const player = new shaka.Player(video);
 
-<div class="card">
-<h2>Group 1</h2>
+    player.addEventListener("error", e => {
+        console.error(e.detail);
+    });
 
-<a class="link" target="_blank" href="https://live05.meung.app/live/75748097.m3u8">Source 1</a>
+    player.configure({
+        drm: {
+            clearKeys: {
+                "2c338a117d434ce4bbe3569231af90f1": "a9633d901ee8a3f4f58ac314b5c5f4fb"
+            }
+        }
+    });
 
-<a class="link" target="_blank" href="https://we.smarop.store/spoos1_720/index.m3u8">Source 2</a>
+    try {
+        await player.load("https://qp-pldt-live-bpk-ucd-prod.akamaized.net/bpk-tv/fifa_ppv1/default/index.mpd");
+        console.log("Loaded");
+    }
+    catch (e) {
+        console.error(e);
+    }
+}
 
-<a class="link" target="_blank" href="https://lordatomic.github.io/uefa/plyr?x=https://ts.copyniga.cfd/v/4f52c4752530ef96d607ec32e333e1d3/index.m3u8">Source 3</a>
-
-<a class="link" target="_blank" href="https://ts.copyniga.cfd/v/4f52c4752530ef96d607ec32e333e1d3/480p/index.m3u8">Source 4</a>
-
-</div>
-
-<div class="card">
-<h2>Group 2</h2>
-
-<a class="link" target="_blank" href="https://live06.zuqiu106.com/live/20233432.m3u8">Source 1</a>
-
-<a class="link" target="_blank" href="https://lordatomic.github.io/uefa/engl.html">Source 2</a>
-
-<a class="link" target="_blank" href="https://nhjjhhjhjjhfjj.pages.dev/1782525171/8b496254ae764995a17c6b1668b369b8/v7_5XFzSfQ229NW-szUbLJUy8mxhc3TnITstAwQ9BCA/fusballtv1uhd-de.m3u8">Source 3</a>
-
-<a class="link" target="_blank" href="https://nhjjhhjhjjhfjj.pages.dev/1782525328/20ffc0fe168845578fc68f2a91120a03/VB8yu7cioSTyhrq-TsQZ7OmHzr8_ZbSJRcom4l9voNk/beinsportsmax4-sa.m3u8">Source 4</a>
-
-</div>
-
-</div>
+init();
+</script>
 
 </body>
 </html>
