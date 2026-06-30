@@ -51,18 +51,7 @@ async function init() {
 
     try {
         await player.load("https://qp-pldt-live-bpk-ucd-prod.akamaized.net/bpk-tv/fifa_ppv1/default/index.mpd");
-	setTimeout(() => {
-        const range = player.seekRange();
-
-        console.log("Is live:", player.isLive());
-        console.log("Seek range:", range);
-
-        if (player.isLive()) {
-            // Seek to approximately 2 seconds behind the live edge.
-            video.currentTime = Math.max(range.start, range.end - 2);
-        }
-    }, 500);
-        console.log("Loaded");
+	player.goToLive();
     }
     catch (e) {
         console.error(e);
