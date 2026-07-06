@@ -2,59 +2,52 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-    <title>Shaka Player</title>
-
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/controls.css"
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     >
 
+    <meta name="referrer" content="no-referrer">
+
+    <title>Player</title>
+
     <style>
-        html,
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
             width: 100%;
             height: 100%;
             overflow: hidden;
             background: #000;
         }
 
-        #container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
-
         #video {
+            display: block;
             width: 100%;
             height: 100%;
             object-fit: contain;
-        }
-
-        .shaka-video-container {
-            width: 100%;
-            height: 100%;
+            background: #000;
         }
     </style>
 </head>
 
 <body>
 
-<div id="container">
-    <!-- IMPORTANT: no native "controls" attribute -->
-    <video
-        id="video"
-        autoplay
-        playsinline
-    ></video>
-</div>
+<video
+    id="video"
+    autoplay
+    muted
+    playsinline
+    preload="auto"
+></video>
 
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/shaka-player.ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/shaka-player.compiled.js"></script>
 
 <script>
     const STREAM_URL =
@@ -67,95 +60,85 @@
         "20093db6455160fffed4c394def3193d";
 
 
-    async function init() {
+    async function initPlayer() {
         shaka.polyfill.installAll();
 
         if (!shaka.Player.isBrowserSupported()) {
             console.error("Browser not supported");
-            alert("Browser not supported");
             return;
         }
 
         const video = document.getElementById("video");
-        const container = document.getElementById("container");
+
+        const player = new shaka.Player();
 
         try {
-            // Shaka 5.x initialization
-            const player = new shaka.Player();
-
             await player.attach(video);
-
-            // Create only one Shaka UI instance
-            const ui = new shaka.ui.Overlay(
-                player,
-                container,
-                video
-            );
-
-            // Useful for debugging
-            window.player = player;
-            window.ui = ui;
-
-            player.addEventListener("error", (event) => {
-                console.error(
-                    "Shaka Player Error:",
-                    event.detail
-                );
-            });
 
             player.configure({
                 drm: {
                     clearKeys: {
                         [KEY_ID]: KEY
                     }
+                },
+
+                abr: {
+                    enabled: true,
+                    defaultBandwidthEstimate: 10000000
+                },
+
+                manifest: {
+                    defaultPresentationDelay: 4,
+
+                    dash: {
+                        ignoreSuggestedPresentationDelay: true,
+                        ignoreMinBufferTime: true,
+                        autoCorrectDrift: true
+                    }
+                },
+
+                streaming: {
+                    bufferingGoal: 10,
+                    rebufferingGoal: 2,
+                    bufferBehind: 15,
+                    lowLatencyMode: true,
+                    jumpLargeGaps: true,
+
+                    retryParameters: {
+                        maxAttempts: 5,
+                        baseDelay: 1000,
+                        timeout: 20000
+                    }
                 }
             });
 
-            console.log("Loading stream...");
+            player.addEventListener("error", function (event) {
+                console.error("Shaka Player Error:", event.detail);
+            });
 
             await player.load(STREAM_URL);
 
-            console.log("Stream loaded successfully");
-
-            // Move to live edge
             if (player.isLive()) {
                 const range = player.seekRange();
 
-                if (range && range.end > range.start) {
-                    video.currentTime = Math.max(
-                        range.start,
-                        range.end - 1
-                    );
+                if (range.end > range.start) {
+                    video.currentTime = range.end;
                 }
             }
 
-            try {
-                await video.play();
-            }
-            catch (playError) {
-                console.warn(
-                    "Autoplay blocked:",
-                    playError
-                );
-            }
+            await video.play().catch(function (error) {
+                console.warn("Autoplay blocked:", error);
+            });
 
-        }
-        catch (error) {
-            console.error(
-                "Player initialization failed:",
-                error
-            );
-
-            alert(
-                "Unable to load stream. Check browser console for details."
-            );
+        } catch (error) {
+            console.error("Player Error:", error);
         }
     }
 
 
     document.addEventListener(
         "DOMContentLoaded",
-        init
+        initPlayer
     );
 </script>
 
