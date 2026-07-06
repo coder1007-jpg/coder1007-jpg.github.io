@@ -12,6 +12,11 @@
 
     <title>Player</title>
 
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/controls.css"
+    >
+
     <style>
         * {
             margin: 0;
@@ -27,8 +32,15 @@
             background: #000;
         }
 
+        #player-container {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
         #video {
-            display: block;
             width: 100%;
             height: 100%;
             object-fit: contain;
@@ -39,15 +51,21 @@
 
 <body>
 
-<video
-    id="video"
-    autoplay
-    muted
-    playsinline
-    preload="auto"
-></video>
+<div
+    id="player-container"
+    class="shaka-video-container"
+>
+    <video
+        id="video"
+        autoplay
+        muted
+        playsinline
+        preload="auto"
+    ></video>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/shaka-player.compiled.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/shaka-player.ui.min.js"></script>
 
 <script>
     const STREAM_URL =
@@ -61,6 +79,7 @@
 
 
     async function initPlayer() {
+
         shaka.polyfill.installAll();
 
         if (!shaka.Player.isBrowserSupported()) {
@@ -68,70 +87,143 @@
             return;
         }
 
-        const video = document.getElementById("video");
+
+        const video =
+            document.getElementById("video");
+
+        const container =
+            document.getElementById("player-container");
+
 
         const player = new shaka.Player();
 
-        try {
-            await player.attach(video);
+        await player.attach(video);
 
-            player.configure({
-                drm: {
-                    clearKeys: {
-                        [KEY_ID]: KEY
-                    }
-                },
 
-                abr: {
-                    enabled: true,
-                    defaultBandwidthEstimate: 10000000
-                },
+        /*
+         * Shaka Player controls
+         */
+        const ui = new shaka.ui.Overlay(
+            player,
+            container,
+            video
+        );
 
-                manifest: {
-                    defaultPresentationDelay: 4,
 
-                    dash: {
-                        ignoreSuggestedPresentationDelay: true,
-                        ignoreMinBufferTime: true,
-                        autoCorrectDrift: true
-                    }
-                },
+        ui.configure({
 
-                streaming: {
-                    bufferingGoal: 10,
-                    rebufferingGoal: 2,
-                    bufferBehind: 15,
-                    lowLatencyMode: true,
-                    jumpLargeGaps: true,
+            controlPanelElements: [
+                "play_pause",
+                "mute",
+                "volume",
+                "time_and_duration",
+                "spacer",
+                "picture_in_picture",
+                "quality",
+                "fullscreen"
+            ],
 
-                    retryParameters: {
-                        maxAttempts: 5,
-                        baseDelay: 1000,
-                        timeout: 20000
-                    }
+            addBigPlayButton: true,
+
+            fadeDelay: 3
+        });
+
+
+        player.configure({
+
+            drm: {
+                clearKeys: {
+                    [KEY_ID]: KEY
                 }
-            });
+            },
 
-            player.addEventListener("error", function (event) {
-                console.error("Shaka Player Error:", event.detail);
-            });
+            abr: {
+                enabled: true,
+                defaultBandwidthEstimate: 10000000
+            },
+
+            manifest: {
+
+                defaultPresentationDelay: 4,
+
+                dash: {
+                    ignoreSuggestedPresentationDelay: true,
+                    ignoreMinBufferTime: true,
+                    autoCorrectDrift: true
+                }
+            },
+
+            streaming: {
+
+                bufferingGoal: 10,
+
+                rebufferingGoal: 2,
+
+                bufferBehind: 15,
+
+                lowLatencyMode: true,
+
+                jumpLargeGaps: true,
+
+                retryParameters: {
+
+                    maxAttempts: 5,
+
+                    baseDelay: 1000,
+
+                    timeout: 20000
+                }
+            }
+        });
+
+
+        player.addEventListener(
+            "error",
+            function (event) {
+
+                console.error(
+                    "Shaka Player Error:",
+                    event.detail
+                );
+            }
+        );
+
+
+        try {
 
             await player.load(STREAM_URL);
 
+
             if (player.isLive()) {
-                const range = player.seekRange();
+
+                const range =
+                    player.seekRange();
 
                 if (range.end > range.start) {
-                    video.currentTime = range.end;
+
+                    video.currentTime =
+                        range.end;
                 }
             }
 
-            await video.play().catch(function (error) {
-                console.warn("Autoplay blocked:", error);
-            });
 
-        } catch (error) {
-            console.error("Player Error:", error);
+            await video.play().catch(
+                function (error) {
+
+                    console.warn(
+                        "Autoplay blocked:",
+                        error
+                    );
+                }
+            );
+
+        }
+        catch (error) {
+
+            console.error(
+                "Player Error:",
+                error
+            );
         }
     }
 
