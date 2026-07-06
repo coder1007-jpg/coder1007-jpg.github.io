@@ -12,11 +12,6 @@
 
     <title>Player</title>
 
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/controls.css"
-    >
-
     <style>
         * {
             margin: 0;
@@ -28,44 +23,34 @@
         body {
             width: 100%;
             height: 100%;
-            overflow: hidden;
             background: #000;
+            overflow: hidden;
         }
 
-        #player-container {
+        #video {
             position: fixed;
             inset: 0;
             width: 100%;
             height: 100%;
             background: #000;
-        }
-
-        #video {
-            width: 100%;
-            height: 100%;
             object-fit: contain;
-            background: #000;
         }
     </style>
 </head>
 
 <body>
 
-<div
-    id="player-container"
-    class="shaka-video-container"
->
-    <video
-        id="video"
-        autoplay
-        muted
-        playsinline
-        preload="auto"
-    ></video>
-</div>
+<video
+    id="video"
+    autoplay
+    muted
+    controls
+    playsinline
+    preload="auto"
+></video>
 
 
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@5.1.8/dist/shaka-player.ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.js"></script>
 
 <script>
     const STREAM_URL =
@@ -91,107 +76,98 @@
         const video =
             document.getElementById("video");
 
-        const container =
-            document.getElementById("player-container");
 
-
-        const player = new shaka.Player();
-
-        await player.attach(video);
-
-
-        /*
-         * Shaka Player controls
-         */
-        const ui = new shaka.ui.Overlay(
-            player,
-            container,
-            video
-        );
-
-
-        ui.configure({
-
-            controlPanelElements: [
-                "play_pause",
-                "mute",
-                "volume",
-                "time_and_duration",
-                "spacer",
-                "picture_in_picture",
-                "quality",
-                "fullscreen"
-            ],
-
-            addBigPlayButton: true,
-
-            fadeDelay: 3
-        });
-
-
-        player.configure({
-
-            drm: {
-                clearKeys: {
-                    [KEY_ID]: KEY
-                }
-            },
-
-            abr: {
-                enabled: true,
-                defaultBandwidthEstimate: 10000000
-            },
-
-            manifest: {
-
-                defaultPresentationDelay: 4,
-
-                dash: {
-                    ignoreSuggestedPresentationDelay: true,
-                    ignoreMinBufferTime: true,
-                    autoCorrectDrift: true
-                }
-            },
-
-            streaming: {
-
-                bufferingGoal: 10,
-
-                rebufferingGoal: 2,
-
-                bufferBehind: 15,
-
-                lowLatencyMode: true,
-
-                jumpLargeGaps: true,
-
-                retryParameters: {
-
-                    maxAttempts: 5,
-
-                    baseDelay: 1000,
-
-                    timeout: 20000
-                }
-            }
-        });
-
-
-        player.addEventListener(
-            "error",
-            function (event) {
-
-                console.error(
-                    "Shaka Player Error:",
-                    event.detail
-                );
-            }
-        );
+        const player =
+            new shaka.Player();
 
 
         try {
 
-            await player.load(STREAM_URL);
+            await player.attach(video);
+
+
+            player.configure({
+
+                drm: {
+                    clearKeys: {
+                        [KEY_ID]: KEY
+                    }
+                },
+
+
+                abr: {
+                    enabled: true,
+
+                    defaultBandwidthEstimate:
+                        10000000
+                },
+
+
+                manifest: {
+
+                    defaultPresentationDelay: 4,
+
+                    dash: {
+
+                        ignoreSuggestedPresentationDelay:
+                            true,
+
+                        ignoreMinBufferTime:
+                            true,
+
+                        autoCorrectDrift:
+                            true
+                    }
+                },
+
+
+                streaming: {
+
+                    bufferingGoal:
+                        10,
+
+                    rebufferingGoal:
+                        2,
+
+                    bufferBehind:
+                        15,
+
+                    lowLatencyMode:
+                        true,
+
+                    jumpLargeGaps:
+                        true,
+
+                    retryParameters: {
+
+                        maxAttempts:
+                            5,
+
+                        baseDelay:
+                            1000,
+
+                        timeout:
+                            20000
+                    }
+                }
+            });
+
+
+            player.addEventListener(
+                "error",
+                function(event) {
+
+                    console.error(
+                        "Shaka Player Error:",
+                        event.detail
+                    );
+                }
+            );
+
+
+            await player.load(
+                STREAM_URL
+            );
 
 
             if (player.isLive()) {
@@ -199,29 +175,39 @@
                 const range =
                     player.seekRange();
 
-                if (range.end > range.start) {
+                if (
+                    range &&
+                    range.end > range.start
+                ) {
 
                     video.currentTime =
-                        range.end;
+                        Math.max(
+                            range.start,
+                            range.end - 1
+                        );
                 }
             }
 
 
-            await video.play().catch(
-                function (error) {
+            try {
 
-                    console.warn(
-                        "Autoplay blocked:",
-                        error
-                    );
-                }
-            );
+                await video.play();
+
+            }
+            catch (error) {
+
+                console.warn(
+                    "Autoplay blocked:",
+                    error
+                );
+            }
+
 
         }
         catch (error) {
 
             console.error(
-                "Player Error:",
+                "Player load error:",
                 error
             );
         }
